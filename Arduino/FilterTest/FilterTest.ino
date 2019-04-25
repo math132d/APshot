@@ -1,7 +1,8 @@
 int input = A15;
 int filteredInput = A14;
 
-//Filer user was 400K ohm, 104pF
+//Filter used was 400K ohm (4x100k in series), 104pF
+//We might want to consider using a potentiometer in the setup, so we can adjust it more granuarily
 
 void setup() {
   // put your setup code here, to run once:
