@@ -1,14 +1,22 @@
 import numpy as np
 import math as m
 import time
-import sounddevice as sd
+import random
+import pyaudio
+
+pa = pyaudio.PyAudio()
 
 SAMPLERATE = 44100 #Samples per second
 CHUNK = SAMPLERATE * 3
 
+BUFFERLEN = SAMPLERATE * 4
+
+buffer = np.zeros(BUFFERLEN)
+resetBuffer = np.r_[np.zeros(1024), np.ones(BUFFERLEN-1024)]
+
 def karplusStrongChunk(frequency):
 
-    combParameter = 0.99
+    combParameter = 0.98
     pitchPeriod = float(SAMPLERATE/frequency)
     combDelay = m.floor(pitchPeriod-0.5)
 
@@ -36,12 +44,38 @@ def karplusStrongChunk(frequency):
 
     return output
 
-startTime = time.time()
+def addSoundAtTime(input, time):
+    global buffer
 
-outputSignal = karplusStrongChunk(440)
+    spacerSamples = round((float(time)/1000) * SAMPLERATE)
 
-endTime = time.time()
-print((endTime-startTime)*1000)
+    input = np.r_[np.zeros(spacerSamples), input, np.zeros(BUFFERLEN-input.size-spacerSamples)]
+    buffer = np.add(input, buffer)
 
-sd.play(outputSignal, SAMPLERATE)
-sd.wait()
+def callback(in_data, frame_count, time_info, status):
+    global buffer
+    #print(frame_count)
+    data = (buffer[0:frame_count]).astype(np.float32).tostring()
+    #print(buffer.size, resetBuffer.size)
+    buffer = np.multiply(buffer, resetBuffer)
+    buffer = np.roll(buffer, -frame_count)
+    return (data, pyaudio.paContinue)
+
+stream = pa.open(
+                    format=pyaudio.paFloat32,
+                    channels=1,
+                    rate = SAMPLERATE,
+                    output=True,
+                    stream_callback=callback
+                )
+
+stream.start_stream()
+
+while stream.is_active:
+    addSoundAtTime(karplusStrongChunk(random.randint(100, 1000)), 0)
+    time.sleep(0.1)
+
+stream.stop_stream()
+stream.close()
+
+p.terminate()
