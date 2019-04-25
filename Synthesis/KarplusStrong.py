@@ -7,12 +7,14 @@ import pyaudio
 pa = pyaudio.PyAudio()
 
 SAMPLERATE = 44100 #Samples per second
-CHUNK = SAMPLERATE * 3
+CHUNK = SAMPLERATE * 2
 
-BUFFERLEN = SAMPLERATE * 4
+BUFFERLEN = SAMPLERATE * 2
 
 buffer = np.zeros(BUFFERLEN)
 resetBuffer = np.r_[np.zeros(1024), np.ones(BUFFERLEN-1024)]
+
+noiseburst = np.r_[np.random.randn(200),np.zeros(CHUNK-200)]
 
 def karplusStrongChunk(frequency):
 
@@ -24,7 +26,7 @@ def karplusStrongChunk(frequency):
     apParameter = (1-d)/(1+d)
 
     output = np.zeros(CHUNK)
-    input = np.r_[np.random.randn(200),np.zeros(CHUNK-200)]
+    input = noiseburst
 
     combPrev = 0
     lpPrev = 0
@@ -72,8 +74,7 @@ stream = pa.open(
 stream.start_stream()
 
 while stream.is_active:
-    addSoundAtTime(karplusStrongChunk(random.randint(100, 1000)), 0)
-    time.sleep(0.1)
+    addSoundAtTime(karplusStrongChunk(random.randint(100, 700)), 0)
 
 stream.stop_stream()
 stream.close()
