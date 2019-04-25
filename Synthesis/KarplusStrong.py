@@ -7,7 +7,7 @@ CHUNK = SAMPLERATE * 4
 
 def karplusStrongChunk(frequency):
 
-    combParameter = 0.9
+    combParameter = 0.94
     pitchPeriod = SAMPLERATE/frequency
     combDelay = m.floor(pitchPeriod - 0.5)
 
@@ -15,14 +15,14 @@ def karplusStrongChunk(frequency):
     apParameter = (1-d)/(1+d)
 
     output = np.zeros(CHUNK)
-    input = np.r_[np.random.randn(200),np.zeros(CHUNK-200)]
+    input = np.r_[np.random.randn(440),np.zeros(CHUNK-440)]
 
     combPrev = 0
     lpPrev = 0
 
     for n in np.arange(CHUNK):
 
-        if(combDelay < n):
+        if(combDelay > n):
             comb = input[n]
         else:
             comb = input[n] + combParameter*output[n-combDelay]
