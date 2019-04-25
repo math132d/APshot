@@ -3,6 +3,8 @@ import math as m
 import time
 import random
 import pyaudio
+import keyboard
+import _thread
 
 pa = pyaudio.PyAudio()
 
@@ -31,20 +33,21 @@ def karplusStrongChunk(frequency):
     combPrev = 0
     lpPrev = 0
 
-    for n in np.arange(CHUNK):
+    for n in range(CHUNK):
 
         if(combDelay > n):
             comb = input[n]
         else:
             comb = input[n] + combParameter*output[n-combDelay]
 
-        lowpass = 0.5*comb + 0.5*combPrev
+        lowpass = 0.5*(comb + combPrev)
         combPrev = comb
 
         output[n] = apParameter*(lowpass-output[n-1])+lpPrev
         lpPrev = lowpass
 
     return output
+
 
 def addSoundAtTime(input, time):
     global buffer
@@ -57,7 +60,7 @@ def addSoundAtTime(input, time):
 def callback(in_data, frame_count, time_info, status):
     global buffer
     #print(frame_count)
-    data = (buffer[0:frame_count]).astype(np.float32).tostring()
+    data = (buffer[0:frame_count]*0.05).astype(np.float32).tostring()
     #print(buffer.size, resetBuffer.size)
     buffer = np.multiply(buffer, resetBuffer)
     buffer = np.roll(buffer, -frame_count)
@@ -73,8 +76,15 @@ stream = pa.open(
 
 stream.start_stream()
 
+start_time = time.time()
+
+addSoundAtTime(karplusStrongChunk(random.randint(100, 1000)), 0)
+
+end_time = time.time()
+print("time: " + str((end_time-start_time)*1000))
+
 while stream.is_active:
-    addSoundAtTime(karplusStrongChunk(random.randint(100, 700)), 0)
+    time.sleep(0.1)
 
 stream.stop_stream()
 stream.close()
