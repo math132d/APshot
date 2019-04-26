@@ -6,7 +6,7 @@ import _thread
 import pyaudio
 import serial
 
-ser = serial.Serial("COM4", 9600, timeout=0.1)
+ser = serial.Serial("COM3", 9600, timeout=0.1)
 
 pa = pyaudio.PyAudio()
 
@@ -22,7 +22,7 @@ noiseburst = np.r_[np.random.randn(200),np.zeros(CHUNK-200)] #Used as the input 
 
 def karplusStrongChunk(frequency):
 
-    combParameter = 0.98
+    combParameter = 0.99
     pitchPeriod = float(SAMPLERATE/frequency)
     combDelay = int(m.floor(pitchPeriod-0.5))
 
@@ -35,7 +35,7 @@ def karplusStrongChunk(frequency):
     combPrev = 0
     lpPrev = 0
 
-    for n in range(CHUNK):
+    for n in range(CHUNK-1):
 
         if(combDelay > n):
             comb = input[n]
