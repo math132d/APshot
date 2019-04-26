@@ -3,6 +3,9 @@ import math as m
 import time
 import random
 import pyaudio
+import serial               #PySerial
+
+arduino = serial.Serial('COM3', 115200, timeout=.1)
 
 pa = pyaudio.PyAudio()
 
@@ -72,7 +75,14 @@ stream = pa.open(
 stream.start_stream()
 
 while stream.is_active:
-    addSoundAtTime(karplusStrongChunk(random.randint(100, 1000)), 0)
+    data = arduino.readline()   #reads the arduino
+    data = data.decode()        #decodes the byte array to a string
+    try:
+        data = int(data)        #tries to convert the string into an integer
+        addSoundAtTime(karplusStrongChunk(data), 0)
+    except ValueError:
+        pass
+
     time.sleep(0.1)
 
 stream.stop_stream()
