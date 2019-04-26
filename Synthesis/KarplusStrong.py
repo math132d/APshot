@@ -3,8 +3,6 @@ import math as m
 import time
 import random
 import pyaudio
-import keyboard
-import _thread
 
 pa = pyaudio.PyAudio()
 
@@ -52,7 +50,7 @@ def karplusStrongChunk(frequency):
 def addSoundAtTime(input, time):
     global buffer
 
-    spacerSamples = round((float(time)/1000) * SAMPLERATE)
+    spacerSamples = int(round((float(time)/1000) * SAMPLERATE))
 
     input = np.r_[np.zeros(spacerSamples), input, np.zeros(BUFFERLEN-input.size-spacerSamples)]
     buffer = np.add(input, buffer)
