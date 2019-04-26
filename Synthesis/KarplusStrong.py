@@ -10,7 +10,7 @@ def karplusStrongChunk(frequency):
 
     combParameter = 0.99
     pitchPeriod = float(SAMPLERATE/frequency)
-    combDelay = m.floor(pitchPeriod-0.5)
+    combDelay = int(m.floor(pitchPeriod-0.5))
 
     d = pitchPeriod-combDelay-0.5
     apParameter = (1-d)/(1+d)
