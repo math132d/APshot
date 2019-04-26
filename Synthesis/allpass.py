@@ -20,7 +20,7 @@ def allpass(input, delay, b):
 
     return tmpSignal, sampleLength
 
-samplingFreq, fullGuitarSignal = wave.read('guitar.ff.sulB.B3.wav')
+samplingFreq, fullGuitarSignal = wave.read('/Users/laura/Documents/GitHub/APshot/Synthesis/guitar.ff.sulB.B3.wav')
 
 impulse = np.r_[np.array([1]), np.zeros(100000)]
 

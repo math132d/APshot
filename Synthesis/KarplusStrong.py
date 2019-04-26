@@ -10,36 +10,38 @@ arduino = serial.Serial('COM3', 115200, timeout=.1)
 pa = pyaudio.PyAudio()
 
 SAMPLERATE = 44100 #Samples per second
-CHUNK = SAMPLERATE * 3
+CHUNK = SAMPLERATE * 2
 
-BUFFERLEN = SAMPLERATE * 4
+BUFFERLEN = SAMPLERATE * 2
 
 buffer = np.zeros(BUFFERLEN)
 resetBuffer = np.r_[np.zeros(1024), np.ones(BUFFERLEN-1024)]
+
+noiseburst = np.r_[np.random.randn(200),np.zeros(CHUNK-200)]
 
 def karplusStrongChunk(frequency):
 
     combParameter = 0.98
     pitchPeriod = float(SAMPLERATE/frequency)
-    combDelay = m.floor(pitchPeriod-0.5)
+    combDelay = int(m.floor(pitchPeriod-0.5))
 
     d = pitchPeriod-combDelay-0.5
     apParameter = (1-d)/(1+d)
 
     output = np.zeros(CHUNK)
-    input = np.r_[np.random.randn(200),np.zeros(CHUNK-200)]
+    input = noiseburst
 
     combPrev = 0
     lpPrev = 0
 
-    for n in np.arange(CHUNK):
+    for n in range(CHUNK):
 
         if(combDelay > n):
             comb = input[n]
         else:
             comb = input[n] + combParameter*output[n-combDelay]
 
-        lowpass = 0.5*comb + 0.5*combPrev
+        lowpass = 0.5*(comb + combPrev)
         combPrev = comb
 
         output[n] = apParameter*(lowpass-output[n-1])+lpPrev
@@ -47,10 +49,11 @@ def karplusStrongChunk(frequency):
 
     return output
 
+
 def addSoundAtTime(input, time):
     global buffer
 
-    spacerSamples = round((float(time)/1000) * SAMPLERATE)
+    spacerSamples = int(round((float(time)/1000) * SAMPLERATE))
 
     input = np.r_[np.zeros(spacerSamples), input, np.zeros(BUFFERLEN-input.size-spacerSamples)]
     buffer = np.add(input, buffer)
@@ -58,7 +61,7 @@ def addSoundAtTime(input, time):
 def callback(in_data, frame_count, time_info, status):
     global buffer
     #print(frame_count)
-    data = (buffer[0:frame_count]).astype(np.float32).tostring()
+    data = (buffer[0:frame_count]*0.05).astype(np.float32).tostring()
     #print(buffer.size, resetBuffer.size)
     buffer = np.multiply(buffer, resetBuffer)
     buffer = np.roll(buffer, -frame_count)
@@ -74,7 +77,15 @@ stream = pa.open(
 
 stream.start_stream()
 
+start_time = time.time()
+
+addSoundAtTime(karplusStrongChunk(random.randint(100, 1000)), 0)
+
+end_time = time.time()
+print("time: " + str((end_time-start_time)*1000))
+
 while stream.is_active:
+<<<<<<< HEAD
     data = arduino.readline()   #reads the arduino
     data = data.decode()        #decodes the byte array to a string
     try:
@@ -83,6 +94,8 @@ while stream.is_active:
     except ValueError:
         pass
 
+=======
+>>>>>>> 9ab9f61e6a0d00f16f377261ba09625e7bc915d7
     time.sleep(0.1)
 
 stream.stop_stream()
