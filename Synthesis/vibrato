@@ -14,7 +14,7 @@ def vibrato(inputSignal, maxDelay, modFreq, offset = 0):
         if n < delay:
             outputSignal[n] = 0
         else:
-            intDelay = np.int(np.floor(delay))
+            intDelay = np.int(np.floor(delay)) # np.floor returns largest integer
             tmpSignal[n] = inputSignal[n - intDelay]
             fractionalDelay = delay-intDelay
             apParameter = (1-fractionalDelay)/(1+fractionalDelay)
