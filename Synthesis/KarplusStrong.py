@@ -90,8 +90,7 @@ while stream.is_active:
     data = ser.readline().decode()
 
     if len(data) > 0:
-        _thread.start_new_thread(addPluckAtTime, (440, 1024))
-        print("woop")
+        _thread.start_new_thread(addPluckAtTime, (int(data), 0))
 
 stream.stop_stream()
 stream.close()
