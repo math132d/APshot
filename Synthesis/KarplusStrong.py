@@ -7,7 +7,7 @@ import pyaudio
 import serial
 
 #Init Serial with port, baud-rate and timeout
-ser = serial.Serial("COM7", 9600, timeout=0.1)
+ser = serial.Serial("COM6", 9600, timeout=0.1)
 
 #Init pyaudio
 pa = pyaudio.PyAudio()
@@ -95,6 +95,22 @@ def callback(in_data, frame_count, time_info, status):
     #return the data for playback, paContinue indicated there is more data to be read
     return (data, pyaudio.paContinue)
 
+def constrain(val, min_val, max_val):
+    return min(max_val, max(min_val, val))
+
+def lerp_to_key(input, keys):
+    perc = input/60
+    return int(round(keys*perc))
+
+def freq_from_distance(distance, octaves):
+    distance = constrain(distance, 10, 60)
+    distance = lerp_to_key(distance, 12*octaves)   #swap out 12 with 24 for two octaves.
+
+    distance -=12
+
+    return m.pow(2, distance/12)*261.63
+
+
 #Opens pyaudio stream for playback
 stream = pa.open(
                     format=pyaudio.paFloat32,
@@ -107,14 +123,19 @@ stream = pa.open(
 #Start the stream => Start reading and playing from buffer
 stream.start_stream()
 
+dist = 0
 #Holds the main thread active while sound is playing
 #Polling for serial input from Arduino
 while stream.is_active:
+    dist +=1
     #Read available serial data, decode into string
     data = ser.readline().decode()
 
     if len(data) > 0:
-        _thread.start_new_thread(addPluckAtTime, (440, 0, 0))
+        data_sep = data.split(":")
+        freq = freq_from_distance(int(data_sep[0]), 2)
+
+        _thread.start_new_thread(addPluckAtTime, (freq, 0, 0))
 
 #Terminate program (Probably will never be reached atm. Oops)
 stream.stop_stream()
