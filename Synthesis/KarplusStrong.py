@@ -133,9 +133,9 @@ while stream.is_active:
 
     if len(data) > 0:
         data_sep = data.split(":")
-        freq = freq_from_distance(int(data_sep[0]), 2)
+        freq = freq_from_distance(int(data_sep[0]), 1)
 
-        _thread.start_new_thread(addPluckAtTime, (freq, 0, 0))
+        _thread.start_new_thread(addPluckAtTime, (freq, (int(data_sep[1])-6)*2, 0))
 
 #Terminate program (Probably will never be reached atm. Oops)
 stream.stop_stream()
