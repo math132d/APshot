@@ -6,9 +6,6 @@ import _thread
 import pyaudio
 import serial
 
-#Init Serial with port, baud-rate and timeout
-ser = serial.Serial("COM3", 9600, timeout=0.1)
-
 #Init pyaudio
 pa = pyaudio.PyAudio()
 
@@ -22,7 +19,7 @@ resetBuffer = np.r_[np.zeros(1024), np.ones(BUFFERLEN-1024)] #Used to reset the 
 
 noiseburst = np.r_[np.random.randn(200),np.zeros(CHUNK-200)] #Used as the input in karplusStrong
 
-def karplusStrongChunk(frequency):
+def karplusStrongChunk(frequency, volume):
     #Function for generating karplusStrong samples with a lenth of CHUNK
     #Frequency is essentially the pitch
 
@@ -38,7 +35,7 @@ def karplusStrongChunk(frequency):
     #Setting up input and output vars
     #Output is lenth of CHUNK samples filled with zeros
     output = np.zeros(CHUNK)
-    input = noiseburst
+    input = noiseburst * (m.pow(10, volume/20))
 
     #Delayed values for the combFilter and LowPassFilter.
     #Set to the previous sample later in the code
@@ -62,7 +59,7 @@ def karplusStrongChunk(frequency):
     return output
 
 
-def addPluckAtTime(freq, time):
+def addPluckAtTime(freq, volume, time):
     #Function for adding a pluck sound to the buffer
     #freq determines the pitch
     #time is a delay added before the sound is inserted into buffer in samples
@@ -70,7 +67,7 @@ def addPluckAtTime(freq, time):
     global buffer
     s_t = t.time() #Starttime for measuring performance
     spacerSamples = time
-    input = karplusStrongChunk(freq) #Generate the pluck using karplusStrong
+    input = karplusStrongChunk(freq, volume) #Generate the pluck using karplusStrong
 
     #Padding input with zeros before adding to the buffer. Must be same length
     input = np.r_[np.zeros(spacerSamples), input, np.zeros(BUFFERLEN-input.size-spacerSamples)]
@@ -110,11 +107,7 @@ stream.start_stream()
 #Holds the main thread active while sound is playing
 #Polling for serial input from Arduino
 while stream.is_active:
-    #Read availible serial data, decode into string
-    data = ser.readline().decode()
-
-    if len(data) > 0: #If there is data availible play pluck at that frequency
-        _thread.start_new_thread(addPluckAtTime, (int(data), 0))
+    _thread.start_new_thread(addPluckAtTime, (440, -20, 0))
 
 #Terminate program (Probably will never be reached atm. Oops)
 stream.stop_stream()
