@@ -6,6 +6,9 @@ import _thread
 import pyaudio
 import serial
 
+#Init Serial with port, baud-rate and timeout
+ser = serial.Serial("COM7", 9600, timeout=0.1)
+
 #Init pyaudio
 pa = pyaudio.PyAudio()
 
@@ -107,7 +110,11 @@ stream.start_stream()
 #Holds the main thread active while sound is playing
 #Polling for serial input from Arduino
 while stream.is_active:
-    _thread.start_new_thread(addPluckAtTime, (440, -20, 0))
+    #Read available serial data, decode into string
+    data = ser.readline().decode()
+
+    if len(data) > 0:
+        _thread.start_new_thread(addPluckAtTime, (440, 0, 0))
 
 #Terminate program (Probably will never be reached atm. Oops)
 stream.stop_stream()

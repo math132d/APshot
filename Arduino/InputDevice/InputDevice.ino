@@ -5,7 +5,8 @@
 #define IR A0 // define IR signal pin
 #define model 1080 // used 1080 because model GP2Y0A21YK0F is used
 
-#define LOG_SIZE 5
+#define DIS_LOG_SIZE 5
+#define FIL_LOG_SIZE 3
 
 //Filter used was 400K ohm (4x100k in series), 104pF
 //We might want to consider using a potentiometer in the setup, so we can adjust it more granuarily
@@ -14,39 +15,89 @@ Mode mode = MED;
 
 SharpIR SharpIR(IR, model);
 bool debug = false;
+bool arduinoLog = false;
 bool averageDis = true;
-int disLog[LOG_SIZE];
-int disLogSort[LOG_SIZE];
-
+int disLog[DIS_LOG_SIZE];
+int disLogSort[DIS_LOG_SIZE];
 int dis = 0;
 int disOut = 0;
-int filteredIn = 0;
 
+int filteredIn = 0;
+int filteredThreshold = 5;
+int filteredLog[FIL_LOG_SIZE];
+
+bool sendInput = false;
+bool inputHandled = false;
 
 void setup() {
   // put your setup code here, to run once:
-  for (int i = 0; i < LOG_SIZE; i++)
+  for (int i = 0; i < DIS_LOG_SIZE; i++)
   {
     disLog[i] = 10;
+  }
+
+  for (int i = 0; i < FIL_LOG_SIZE; i++)
+  {
+    disLog[i] = 0;
   }
 
   Serial.begin(9600);
 }
 
 void loop() {
-  // put your main code here, to run repeatedly:
+  // Pressure button
+  // Read and log the input from the pressure button
+  filteredIn = analogRead(FILTERED_IN);
+  for (int i = FIL_LOG_SIZE - 1; i >= 0; i--)
+  {
+    if (i != 0)
+    {
+      filteredLog[i] = filteredLog[i - 1];
+    }
+    else
+    {
+      filteredLog[i] = filteredIn;
+    }
+  }
+
+  // Check if the current sample is above the threshold
+  if (filteredIn > filteredThreshold)
+  {
+    // Check if the remaining samples are above the threshold
+    bool test = true;
+    for ( int i = 1; i < FIL_LOG_SIZE; i++)
+    {
+      if (filteredLog[i] < filteredThreshold)
+      {
+        test = false;
+        break;
+      }
+    }
+    // If all samples are valid, set to send
+    if (test)
+    {
+      sendInput = true;
+    }
+  }
+  else if (filteredIn == 0)
+  {
+    // If current sample is at zero, reset sending
+    sendInput = false;
+    inputHandled = false;
+  }
+
+
+  // Distance sensor
   dis = SharpIR.distance();  // this returns the distance to the object you're measuring
   dis = constrain(dis, 10, 80);
-  filteredIn = analogRead(FILTERED_IN);
-
   switch (mode) {
     case RAW: // Use raw input from distance sensor
       disOut = dis;
       break;
 
-    case AVG: // Use average of LOG_SIZE samples
+    case AVG: // Use average of DIS_LOG_SIZE samples
       disOut = 0;
-      for (int i = LOG_SIZE - 1; i >= 0; i--)
+      for (int i = DIS_LOG_SIZE - 1; i >= 0; i--)
       {
         if (i != 0)
         {
@@ -60,12 +111,11 @@ void loop() {
         }
       }
 
-
-      disOut /= LOG_SIZE;
+      disOut /= DIS_LOG_SIZE;
       break;
 
-    case MED: // Use median of LOG_SIZE samples. Requires sorting!
-      for (int i = LOG_SIZE - 1; i >= 1; i--)
+    case MED: // Use median of DIS_LOG_SIZE samples. Requires sorting!
+      for (int i = DIS_LOG_SIZE - 1; i >= 1; i--)
       {
         disLog[i] =  disLog[i - 1];
         disLogSort[i] = disLog[i];
@@ -73,13 +123,13 @@ void loop() {
       disLog[0] = dis;
       disLogSort[0] = disLog[0];
 
-      bubbleSort(disLogSort, LOG_SIZE);
-      disOut = median(disLogSort, LOG_SIZE);
+      bubbleSort(disLogSort, DIS_LOG_SIZE);
+      disOut = median(disLogSort, DIS_LOG_SIZE);
 
       break;
   }
 
-
+  // debug mode outputs all information constantly
   if (debug)
   {
     Serial.print("Input: "); Serial.print(analogRead(IN)); Serial.print("  ");
@@ -91,11 +141,26 @@ void loop() {
   }
   else
   {
-    Serial.print("D: "); Serial.print(disOut); Serial.print(" ");
-    Serial.print("I: "); Serial.print(filteredIn); Serial.print(" ");
-    Serial.println("");
+    // If a valid press has been detected, and not yet been sent, send through serial
+    if (sendInput && !inputHandled)
+    {
+      if (arduinoLog) {
+        // Send distance
+        Serial.print("D: "); Serial.print(disOut); Serial.print(" ");
+        // Send button input
+        Serial.print("I: "); Serial.print(filteredIn); Serial.print(" ");
+        Serial.println("");
+      }
+      else
+      {
+        // Send information for python
+        Serial.print(disOut); Serial.print(":"); Serial.print(filteredIn);
+        Serial.println("");
+      }
+      // Mark message as sent
+      inputHandled = true;
+    }
   }
-
 }
 
 void bubbleSort(int a[], int size) {
