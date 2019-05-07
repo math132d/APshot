@@ -7,12 +7,12 @@ import pyaudio
 import serial
 
 #Init Serial with port, baud-rate and timeout
-ser = serial.Serial("COM6", 9600, timeout=0.1)
+ser = serial.Serial("COM5", 9600, timeout=0.1)
 
 #Init pyaudio
 pa = pyaudio.PyAudio()
 
-SAMPLERATE = 44100 #Samples per second
+SAMPLERATE = 32000 #Samples per second
 CHUNK = SAMPLERATE * 2 #How many samples to generate a pluck over
 
 BUFFERLEN = SAMPLERATE * 3
@@ -106,7 +106,7 @@ def freq_from_distance(distance, octaves):
     distance = constrain(distance, 10, 60)
     distance = lerp_to_key(distance, 12*octaves)   #swap out 12 with 24 for two octaves.
 
-    distance -=12
+    distance -=13
 
     return m.pow(2, distance/12)*261.63
 
@@ -133,9 +133,9 @@ while stream.is_active:
 
     if len(data) > 0:
         data_sep = data.split(":")
-        freq = freq_from_distance(int(data_sep[0]), 2)
+        freq = freq_from_distance(int(data_sep[0]), 1)
 
-        _thread.start_new_thread(addPluckAtTime, (freq, 0, 0))
+        _thread.start_new_thread(addPluckAtTime, (freq, int(data_sep[1])*2-16, 0))
 
 #Terminate program (Probably will never be reached atm. Oops)
 stream.stop_stream()
