@@ -8,9 +8,6 @@ import serial
 import keyboard
 import scipy.io.wavfile as wavfile
 
-#Init Serial with port, baud-rate and timeout
-ser = serial.Serial("COM5", 9600, timeout=0.1)
-
 #Init pyaudio
 pa = pyaudio.PyAudio()
 
@@ -19,26 +16,13 @@ CHUNK = SAMPLERATE * 2 #How many samples to generate a pluck over
 
 BUFFERLEN = SAMPLERATE * 3
 
-SAVING = False
+saving = True
 
 buffer = np.zeros(BUFFERLEN)
 saveBuffer = np.empty(1024, dtype=np.float32)
 resetBuffer = np.r_[np.zeros(1024), np.ones(BUFFERLEN-1024)] #Used to reset the first 1024 samples in the buffer
 
 noiseburst = np.r_[np.random.randn(200),np.zeros(CHUNK-200)] #Used as the input in karplusStrong
-
-def armRecord(event):
-    global SAVING
-
-    if event.name == "space":
-        if SAVING:
-            wavfile.write("rec.wav", SAMPLERATE, saveBuffer)
-            print("File was written")
-            SAVING = False
-        else:
-            SAVING = True
-
-keyboard.on_release(armRecord)
 
 def karplusStrongChunk(frequency, volume):
     #Function for generating karplusStrong samples with a lenth of CHUNK
@@ -79,6 +63,8 @@ def karplusStrongChunk(frequency, volume):
 
     return output
 
+keyboard
+
 
 def addPluckAtTime(freq, volume, time):
     #Function for adding a pluck sound to the buffer
@@ -96,7 +82,6 @@ def addPluckAtTime(freq, volume, time):
 
     e_t = t.time() #Endtime for measuring performance
     print((e_t-s_t)*1000) #Prints time operation took
-
     return
 
 def callback(in_data, frame_count, time_info, status):
@@ -106,9 +91,9 @@ def callback(in_data, frame_count, time_info, status):
     global saveBuffer
 
     #Gets first 'frame_count' samples from the array (frame_count should be 1024 samples)
-    data = (buffer[0:frame_count]).astype(np.float32).tostring()
+    data = (buffer[0:frame_count]*0.05).astype(np.float32).tostring()
 
-    if SAVING:
+    if saving:
         saveBuffer = np.append(saveBuffer, buffer[0:frame_count])
 
     #Resets the first 1024 samples of the buffer (Since they were already read)
@@ -146,20 +131,20 @@ stream = pa.open(
 #Start the stream => Start reading and playing from buffer
 stream.start_stream()
 
+_thread.start_new_thread(addPluckAtTime, (196.00, 0, 0))
+
+dist = 0
 #Holds the main thread active while sound is playing
 #Polling for serial input from Arduino
-while stream.is_active:
-    #Read available serial data, decode into string
-    data = ser.readline().decode()
+while stream.is_active and dist < 10:
+    dist += 1
+    _thread.start_new_thread(addPluckAtTime, (196.00, 0, 0))
+    t.sleep(1)
 
-    if len(data) > 0:
-        data_sep = data.split(":")
-        freq = freq_from_distance(int(data_sep[0]), 1)
-
-        _thread.start_new_thread(addPluckAtTime, (freq, int(data_sep[1])*2-16, 0))
+wavfile.write("Test.wav", 38000, saveBuffer)
 
 #Terminate program (Probably will never be reached atm. Oops)
 stream.stop_stream()
 stream.close()
 
-p.terminate()
+pa.terminate()
