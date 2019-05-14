@@ -16,7 +16,6 @@ Mode mode = MED;
 SharpIR SharpIR(IR, model);
 bool debug = false;
 bool arduinoLog = false;
-bool averageDis = true;
 int disLog[DIS_LOG_SIZE];
 int disLogSort[DIS_LOG_SIZE];
 int dis = 0;
