@@ -8,8 +8,7 @@
 #define DIS_LOG_SIZE 5
 #define FIL_LOG_SIZE 3
 
-//Filter used was 400K ohm (4x100k in series), 104pF
-//We might want to consider using a potentiometer in the setup, so we can adjust it more granuarily
+//Filter used was 470K ohm, 104pF
 enum Mode {RAW, AVG, MED};
 Mode mode = MED;
 
