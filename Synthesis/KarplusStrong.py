@@ -106,9 +106,9 @@ def freq_from_distance(distance, octaves):
     distance = constrain(distance, 10, 60)
     distance = lerp_to_key(distance, 12*octaves)   #swap out 12 with 24 for two octaves.
 
-    distance -=13
+    distance -=13   #to make C at 261.63 Hz the C in the middle with two octaves
 
-    return m.pow(2, distance/12)*261.63
+    return m.pow(2, distance/12)*261.63 #used to play a given node -> distance is placement of note related to C4
 
 
 #Opens pyaudio stream for playback
@@ -135,7 +135,7 @@ while stream.is_active:
         data_sep = data.split(":")
         freq = freq_from_distance(int(data_sep[0]), 1)
 
-        _thread.start_new_thread(addPluckAtTime, (freq, int(data_sep[1])*2-16, 0))
+        _thread.start_new_thread(addPluckAtTime, (freq, int(data_sep[1])*2-16, 0))  #To receive volume (vary between 0-16) when we used IR sensor
 
 #Terminate program (Probably will never be reached atm. Oops)
 stream.stop_stream()
